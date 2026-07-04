@@ -1,0 +1,19 @@
+{
+  "name": "@nodejs-express-boilerplate/worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "prisma generate --schema ../services/app/prisma/schema.prisma && tsc -p tsconfig.json",
+    "dev": "tsx watch src/poll.ts",
+    "start": "node dist/poll.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.716.0",
+    "@aws-sdk/client-sqs": "^3.716.0",
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}

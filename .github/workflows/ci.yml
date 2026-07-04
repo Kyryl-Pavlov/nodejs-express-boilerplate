@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Check lint rules
+        run: npm run lint
+
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema services/app/prisma/schema.prisma
+
+      - name: Run tests
+        env:
+          SECRET_KEY: test-only-not-a-real-secret
+        # Integration tests spin up their own Postgres via testcontainers, which
+        # GitHub-hosted ubuntu runners support out of the box (Docker preinstalled).
+        run: npm run test:coverage
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start CI stack
+        run: docker compose -f docker-compose.ci.yml up -d --wait
+        timeout-minutes: 5
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.ci.yml logs
+
+      - name: Run E2E tests
+        env:
+          E2E_BASE_URL: http://localhost/api/v1
+        run: npm run test:e2e
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.ci.yml down -v

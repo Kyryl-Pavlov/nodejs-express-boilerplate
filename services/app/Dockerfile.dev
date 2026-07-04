@@ -1,0 +1,23 @@
+FROM node:22-slim
+
+WORKDIR /repo
+
+# build-essential/python3 let bcrypt (native) compile from source if no prebuilt
+# binding matches this exact glibc/Node ABI combination.
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY services/app/package.json services/app/tsconfig.json ./services/app/
+COPY services/app/prisma ./services/app/prisma
+COPY lambda/package.json lambda/tsconfig.json ./lambda/
+
+RUN npm ci
+RUN npx prisma generate --schema services/app/prisma/schema.prisma
+
+# Source is bind-mounted via docker-compose.yml (enables hot reload); node_modules is
+# hoisted to /repo/node_modules by npm workspaces, so the ./services/app mount below
+# never touches it.
+EXPOSE 5000 9229
+
+CMD ["npm", "run", "dev", "--workspace=services/app"]

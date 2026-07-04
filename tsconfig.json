@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node", "vitest/globals"],
+    "paths": {
+      "@app/*": ["services/app/src/*"],
+      "@lambda/*": ["lambda/src/*"]
+    }
+  },
+  "include": ["tests/**/*.ts", "services/app/src/**/*.ts", "lambda/src/**/*.ts"]
+}
